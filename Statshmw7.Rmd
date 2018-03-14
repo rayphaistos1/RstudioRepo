@@ -2,7 +2,7 @@
 ---
 title: 'Logistic Regression'
 author: "Raymond K Roberts"
-date: "mm/dd/yyyy"
+date: "03/13/2018"
 output: word_document
 fontsize: 12pt
 ---
@@ -23,8 +23,6 @@ if (!require(DS705data)){
 }
 ```
 
-
-```
 ## Exercise 1
 
 A study was conducted whereby the type of anesthetic (A or B), nausea after the surgery (Yes or No), the amount of pain medication taken during the recovery period, and age for a random sample of 72 patients undergoing reconstructive knee surgery.  
@@ -42,9 +40,20 @@ Is there an association between these two categorical variables at a 5% level of
 ```{r}
 data(anesthesia)
 
+tbl <- table(anesthesia$anesthetic,anesthesia$nausea) # create a table
+colnames(tbl) <- c("No Nausea","Nausea")  # add column names
+rownames(tbl) <- c("Anesthetic A","Anesthetic B")  # add row names
+tbl
+
+chisq.test(anesthesia$anesthetic,anesthesia$nausea)
+
 ```
 
-Replace this text with your answer to the question about an association.
+Reject the null hypothesis that alpha = 0.05 because p=0.004535.
+
+We find significant evidence to show that the alternative is true, that there is an association between the two categorical variables for type of anesthetic and whether or not the patient experienced nausea.
+
+
 
 ### Part 1b
 
@@ -53,7 +62,12 @@ Obtain the output from R (including the Wald tests for coefficients - so use "su
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1b -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+# convert to 0's and 1's
+anesthesia$anesthetic2 <- ifelse(anesthesia$anesthetic=="A",1,0) 
+anesthesia$nausea2 <- ifelse(anesthesia$nausea=="Yes",1,0) 
+
+sickdrug_reg <- glm(nausea2~anesthetic2,data=anesthesia,family="binomial")
+summary(sickdrug_reg)
 
 ```
 
@@ -64,7 +78,9 @@ What is the outcome of the hypothesis test that the coefficient of **anesthetic*
 
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1c -|-|-|-|-|-|-|-|-|-|-|-
 
-Replace this text with your answer.
+Reject the null hypothesis at the alpha = 0.05 because the z value is 2.999 (greater than 2)
+
+We find significant evidence showing that the true regression coefficient of anesthetic is not zero and has an effect on the dependent variable nausea
 
 ### Part 1d
 
@@ -73,11 +89,11 @@ Convert the estimated coefficient of **anesthetic** to an odds ratio and interpr
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1d -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+exp(1.5261)
 
 ```
 
-Replace this text with your written answer.
+The odds of getting nausea following the use of anesthetic A 4.6 times as large as the odds of getting nausea following use of anesthetic B, given all other conditions held constant.
 
 ### Part 1e
 
@@ -86,7 +102,8 @@ Install the package "mosaic" (if you don't have it installed already), then load
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1e -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+library(dplyr)
+library(mosaic)
 
 ```
 
@@ -100,11 +117,11 @@ Interpret this odds ratio in the context of the problem.
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1f -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+1/4.600201
 
 ```
 
-Replace this text with your interpretation here.
+The odds of getting nausea following the use of anesthetic B is only 21.7% as large as the odds of getting nausea following use of anesthetic A, given all other conditions held constant.
 
 ### Part 1g
     
@@ -113,7 +130,8 @@ Compute the predicted probability of a reconstructive knee surgery patient havin
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1g -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+newdata <- data.frame(anesthetic2=0,nausea2=1)
+predict(sickdrug_reg,newdata,type = "response")
 
 ```
 
@@ -126,8 +144,12 @@ Compute a 95% confidence interval for the predicted probability of a reconstruct
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 1h -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
-
+worker <- predict(sickdrug_reg,newdata,se.fit = TRUE)
+C = .95   #confidence level
+crit = qnorm(1-(1-C)/2)  # critical value
+lower = exp(worker$fit-crit*worker$se.fit)/(1+exp(worker$fit-crit*worker$se.fit))
+upper = exp(worker$fit+crit*worker$se.fit)/(1+exp(worker$fit+crit*worker$se.fit))
+c(lower,upper)
 ```
 
 ## Exercise 2
@@ -143,11 +165,15 @@ At $\alpha = 0.05$, is there a statistically significant relationship between na
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 2a -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+
+sickpain_reg <- glm(nausea2~painmed,data=anesthesia,family="binomial")
+summary(sickpain_reg)
 
 ```
 
-Replace this text with your written answer here.
+Reject the null hypothesis at the alpha = 0.05 because the z value is 4.244 (greater than 2)
+
+We find significant evidence showing that the true regression coefficient of pain is not zero and affects the dependent variable nausea.
 
 ### Part 2b  
 
@@ -156,11 +182,11 @@ Convert the estimated coefficient of **painmed** to an odds ratio and interpret 
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 2b -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+exp(0.037487)
 
 ```
 
-Replace this text with your interpretation here.
+The odds of taking an additional one unit of pain medication and getting nausea increase is 3.81% larger than the odds of getting nausea and not having taken the additional unit of pain medication  anesthetic A, given all other conditions held constant.
 
 ### Part 2c
 
@@ -171,8 +197,15 @@ Comment on these two probabilities.
 ### -|-|-|-|-|-|-|-|-|-|-|- Answer 2c -|-|-|-|-|-|-|-|-|-|-|-
 
 ```{r}
-# Insert your R code here.
+
+ml50 <- data.frame(nausea2=1, painmed =50)
+ml100<- data.frame(nausea2=1, painmed = 100)
+
+predict(sickpain_reg,ml50,type = "response")
+predict(sickpain_reg,ml100,type = "response")
+
+
 
 ```
 
-Replace this text with your written answer here.
+The predicted probability of a recontructive knee surgery patient having nausea in the recovery time after surgey nearly triples when the dosage of pain medication is doubled from 50 units to 100 units. This leads me to suspect a "toxic" level well before the dosage of 125 units where nausea is an all but certain probability.
